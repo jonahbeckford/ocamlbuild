@@ -38,10 +38,15 @@ OCAMLBUILD_LIBDIR_RELATIVE = $(filter . .. ./% ../%, $(OCAMLBUILD_LIBDIR))
 OCAML_RELOCATABLE = \
   $(shell ocamlc -config-var standard_library_relative 2>/dev/null)
 OCAMLC_BIN_DIR = $(abspath $(dir $(shell command -v ocamlc)))
+# dk0 per-package build: ocamlbuild installs into its own package prefix, not the
+# compiler's bindir, so condition 2 (bindir == compiler bindir) is dropped. The
+# relocation is computed from the tool's own location at runtime, and dk0's
+# consume-time merged prefix co-locates ocamlbuild with the compiler, so this is
+# safe. Without this, the non-relocatable fallback mis-resolves OCAMLBUILD_LIBDIR=..
+# under MSVC to a garbage absolute path (e.g. Y:/lib).
 OCAMLBUILD_RELOCATABLE := \
   $(if $(OCAMLBUILD_LIBDIR_RELATIVE),$\
-    $(if $(OCAML_RELOCATABLE),$\
-      $(if $(filter $(abspath $(OCAMLBUILD_BINDIR)),$(OCAMLC_BIN_DIR)),true)))
+    $(if $(OCAML_RELOCATABLE),true))
 
 # If OCAMLBUILD_LIBDIR is an explicit relative path, but Relocatable ocamlbuild
 # cannot be built (see above), then OCAMLBUILD_LIBDIR_ACTUAL is the absolute
